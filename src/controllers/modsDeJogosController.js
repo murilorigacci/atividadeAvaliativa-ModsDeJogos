@@ -1,16 +1,27 @@
 import dados from "../models/dados.js";
+import express from "express"
 const { mods } = dados;
 
 
 
 const getAllMods = (req, res) => {
 
+    const app = express();
+    app.use(express.json());
+    
+    res.status(200).json({
+        total: mods.length,
+        mods: mods
+    })
 
     app.get("/mods/jogo/:jogo", (req, res) => {
     let jogo = req.params.jogo;
     jogo = jogo.toLowerCase();
 
-    const jogosFiltrados = mods.filter(m => m.jogo.toLowerCase().includes(jogo))
+    console.log(jogo);
+    
+
+    const jogosFiltrados = mods.filter(p => p.jogo.toLowerCase().includes(jogo))
 
     if(jogosFiltrados) {
         res.status(200).json(jogosFiltrados);
@@ -20,27 +31,9 @@ const getAllMods = (req, res) => {
         })
     }
 });
-    res.status(200).json({
-        total: mods.length,
-        mods: mods
-    })
-
-
-    app.get("/mods/categoria/:categoria", (req, res) => {
-    let categoria = req.params.categoria;
-    categoria = categoria.toLowerCase();
-
-    const categoriasFiltradas = mods.filter(m => m.categoria.toLowerCase().includes(categoria))
-
-    if(categoriasFiltradas) {
-        res.status(200).json(categoriasFiltradas);
-    } else {
-        res.status(404).json({
-            mensagem: "Categoria não encontrada!"
-        })
-    }
-});
+    
 }
+
 
 const getById = (req, res) => {
     let id = parseInt(req.params.id);
@@ -146,4 +139,87 @@ const deleteMod = (req, res) => {
     })
 }
 
-export { getAllMods, getById, createMod, deleteMod };
+const updateMods = (req, res) => {
+    const id = parseInt(req.params.id);
+
+    const {  jogo, versao, downloads, categoria, compatibilidade, dataUpdate } = req.body;
+
+
+    if (isNaN(id)) {
+        return res.status(400).json({
+            success: false,
+            message: "O id deve ser um número válido"
+        })
+    }
+
+    const modExiste = mods.find(mod => mod.id === id);
+
+    if (!modExiste) {
+        return res.status(400).json({
+            success: false,
+            message: "A mod não existe."
+        })
+    }
+
+    if(downloads) {
+        if (downloads <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "O campo 'downloads' deve ser maior que 0!"
+            });
+        }
+    }
+
+    if(jogo){
+        if (!jogo.includes(jogo.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                message: `O campo 'jogo' deve ser preenchido!!`
+            });
+        }
+    }
+    if(compatibilidade){
+        if (!compatibilidade.includes(compatibilidade.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                message: `O campo 'compatibilidade' deve ser preenchido!!`
+            });
+        }
+    }
+
+    if(categoria){
+        if (!categoria.includes(categoria.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                message: `O campo 'categoria' deve ser preenchido!`
+            });
+        } 
+    }
+
+    const modsAtualizados = mods.map(mod => {
+        return mod.id === id
+            ? {
+                ...mod,
+                ...(jogo      && { jogo }),
+                ...(downloads    && { downloads }),
+                ...(jogo  && { jogo }),
+                ...(categoria      && { categoria }),
+                ...(compatibilidade      && { compatibilidade }),
+                ...(dataUpdate && new Date(dataUpdate) >= new Date() && { dataUpdate })
+            }
+            : mod;
+    });
+    
+    mods.splice(0, mods.length, ...modsAtualizados);
+
+    const modNovo = mods.find(mod => mod.id === id);
+
+    res.status(200).json({
+        success: true,
+        message: "Dados atualizados com sucesso",
+        mod: modNovo
+    })
+
+}
+
+export { getAllMods, getById, createMod, deleteMod, updateMods };
