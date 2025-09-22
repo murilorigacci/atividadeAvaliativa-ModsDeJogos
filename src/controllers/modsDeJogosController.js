@@ -127,6 +127,23 @@ const createMod = (req, res) => {
     })
 }
 
+const deleteMod = (req, res) => {
+    let id = parseInt(req.params.id);
+    const modParaRemover = mods.find(c => c.id === id);
 
+    if (!modParaRemover) {
+        return res.status(404).json({
+            success: false,
+            message: 'Este mod nao existe'
+        })
+    }
+    const modsFiltrados = mods.filter(mod => mod.id !== id);
+    mods.splice(0, mods.length, ...modsFiltrados);
+    res.status(200).json({
+        success: true,
+        message: 'Mod deletado com sucesso!',
+        modRemovido: modParaRemover
+    })
+}
 
 export { getAllMods, getById, createMod, deleteMod };
